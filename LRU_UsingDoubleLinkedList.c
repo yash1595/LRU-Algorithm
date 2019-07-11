@@ -1,116 +1,164 @@
+#include <stdint.h>
 #include <stdio.h>
-#define MEMSIZE 3
 
-struct doublelinked{
-	int data;
-	struct doublelinked* next;
-	struct doublelinked* prev;
-};
+#define MEMSIZE	(4)
 
-typedef struct doublelinked node;
-node* head=NULL;
-node* tail=NULL;
-
-int count=0;
-
-node* node1;
-node* node2;
-node* node3;
-
-void InitCache(void);
-void CacheSearch(void);
-void DiplayCache(void);
-
-void InitCache()
+typedef struct dd
 {
-	node1 = (node*)malloc(sizeof(node));
-	node2 = (node*)malloc(sizeof(node));
-	node3 = (node*)malloc(sizeof(node));
+	int val;
+	struct dd* next;
+	struct dd* prev;
+}doublelinkedlist;
 
-	if(node1 && node2 && node3 != NULL)
-	{
-		node3->data=node2->data=node1->data=0;
-		
-		node1->prev=NULL;
-		node1->next=node2;
+doublelinkedlist* head;
+doublelinkedlist* tail;
+doublelinkedlist* temp;
 
-		node2->prev=node1;
-		node2->next=node3;
-
-		node3->prev=node2;
-		node3->next=NULL;
-			
-	}
-
-	head=node1;
-	tail=node3;
-}
-
-void CacheSearch(int data)
-{
-	node* temp=head;
-	int count=0;
-	int found=0;
-	int i=0;
-	while(temp!=NULL)
-	{
-		if(temp->data==data){found=1;break;}
-		++count;
-		temp=temp->next;
-	}
-	if(found==1)
-	{
-		int temporary_data=temp->data;				// Shifts the data from left to right.
-		while(count!=0)								// Eg.[3,2,1]=>where 1 is LRU(Least Recently Used) and 3 is RU(Recently Used). User requests for 1;
-		{										    // One is placed at in index '0' and the previous numbers are shifted to right by 1 index.
-			temp->data=temp->prev->data;			// The new array will be:[1,3,2]. Now index'0' has 1 which is RU and index'2' has 
-			temp=temp->prev;						// 2 which is the LRU.
-			--count;
-		}
-		head->data=temporary_data;
-		found=0;
-	}
-	else
-	{
-		for(i=0;i<MEMSIZE-1;++i)					// Adds new element at index'0'.
-		{											// Eg.[3,2,1]=>where 1 is LRU(Least Recently Used) and 3 is RU(Recently Used). User requests for 4;
-			tail->data=tail->prev->data;			// Four is absent from the array. This results in, 1 being removed from the array and elements being 
-			tail=tail->prev;						// shifted to right by 1. The index'0' is now replaced with value 4. The new array will be:[4,3,2].
-		}
-		head->data=data;
-	}
-	head=node1;
-	tail=node3;
-}
-
-void DiplayCache()
-{
-	node*temp = head;
-	while(temp!=NULL)
-	{
-		printf("[%d]=>",temp->data);
-		temp=temp->next;
-	}
-	printf("NULL\n");
-}
+int AddNode(int);
+int Display(void);
+int SearchCache(int);
+int NumberofNodes(int);
+int FreeCache(int);
 
 int main(void)
 {
-	InitCache();
-	CacheSearch(1);
-	DiplayCache();
-	CacheSearch(2);
-	DiplayCache();
-	CacheSearch(3);
-	DiplayCache();
-	CacheSearch(4);
-	DiplayCache();
-	CacheSearch(2);
-	DiplayCache();
-	CacheSearch(8);
-	DiplayCache();
-	CacheSearch(6);
-	DiplayCache();
+	NumberofNodes(MEMSIZE);
+
+	Display();
+
+	SearchCache(1);
+	Display();
+	SearchCache(2);
+	Display();
+	SearchCache(3);
+	Display();
+	SearchCache(1);
+	Display();
+	SearchCache(2);
+	Display();
+	SearchCache(1);
+	Display();
+	SearchCache(4);
+	Display();
+	SearchCache(3);
+	Display();
+	SearchCache(1);
+	Display();
+
+	FreeCache(MEMSIZE);
+	Display();
+    
 	return 0;
 }
 
+int AddNode(int value)
+{
+	if(head == NULL)
+	{
+		head = (doublelinkedlist*)malloc(sizeof(doublelinkedlist));
+		if(head == NULL)
+		{
+			printf("Unable to allocate space for node\n");
+			return -2;
+		}
+		head->val = value;
+		tail=head;
+		head->prev = NULL;
+	}
+	else
+	{
+	    temp=tail;
+		tail->next = (doublelinkedlist*)malloc(sizeof(doublelinkedlist));
+		if(tail->next == NULL)
+		{
+			printf("Unable to allocate space for node\n");
+			return -2;
+		}
+		tail->next->val = value;
+		tail = tail->next;
+		tail->prev = temp;
+	}
+	tail->next = NULL;
+
+	return 0;
+}
+
+int Display(void)
+{
+	if(head==NULL)
+	{
+		printf("Add a node first\n");
+		return -2;
+	}
+	else
+	{
+		temp=head;
+		while(temp!=NULL)
+		{
+			printf("[%d]->",temp->val);
+			temp=temp->next;
+		}
+		printf("NULL\n");
+	}
+	return 0;
+}
+
+int SearchCache(int value)
+{
+	if(head==NULL)
+	{
+		printf("Add a node first\n");
+		return -1;
+	}
+
+	temp = head;														// Store head temporarily.
+	while(temp!=NULL)													// Traverse Double Linked List.
+	{
+		if(temp->val == value)											// If value in list matches given value.
+		{
+			while(temp!=head)											// Shift all values before the found value to the right.
+			{
+				temp->val = temp->prev->val;
+				temp = temp->prev;
+			}
+			head->val = value;											// Place the found value at the head.
+			return 0;
+		}
+		temp = temp->next;												// Keep iterating the loop.
+	}
+
+	temp = tail->prev;													// For new elements. 
+	while(temp!=NULL)													// Shift all value to the right and over-write the last value.
+	{
+		temp->next->val=temp->val;
+		temp = temp->prev;
+	}
+	head->val = value;													// Place new value at head.
+	
+
+	return 0;
+}
+
+int NumberofNodes(int number)
+{
+    static int i=0;
+    for(i=0;i<number;i+=1)
+    {
+        AddNode(0);
+    }
+    return 0;
+}
+
+int FreeCache(int number)
+{
+	doublelinkedlist** freeing_ptr = &head;
+	static int i=0;
+	
+	for(i=0;i<number;i+=1)
+	{
+	    free(*freeing_ptr);
+	    *freeing_ptr=NULL;
+	    freeing_ptr+=1;
+	}
+	return 0;
+}
